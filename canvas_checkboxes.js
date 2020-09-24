@@ -5,7 +5,7 @@
 // @grant       none
 // @version     1.0
 // @author      -
-// @description
+// @description Add checkboxes to module items in canvas (at HCPSS) to keep track of what's been read/done.
 // ==/UserScript==
 
 var actual_links = document.getElementsByClassName("item_link");

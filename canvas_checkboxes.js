@@ -4,22 +4,43 @@
 // @match       https://*.instructure.com/*/*/modules
 // @match       https://*.instructure.com/*/*/assignments
 // @grant       none
-// @version     1.1
+// @version     1.2.0
 // @author      -
 // @description Add checkboxes to some items in canvas to keep track of what's been read/done.
 // ==/UserScript==
 
-var actual_links = document.getElementsByClassName("item_link");
-var assignments = document.getElementsByClassName("assignment");
+var actual_links = document.getElementsByClassName("ig-title");
 var off_color = "#ffc4c4";
 var on_color = "rgb(227, 251, 184)";
 
-function color_on(elt) {
-  elt.parentElement.parentElement.parentElement.parentElement.style.background = on_color;
+/* For assignments, depth is 3, for modules, depth is 4 */
+function encolor(elt, color, depth) {
+  if (depth === undefined) {
+    var pieces = window.location.pathname.split("/");
+    var final_slug = pieces[pieces.length - 1];
+    if (final_slug == "assignments") {
+      depth = 3;
+    }
+    else if (final_slug == "modules") {
+      depth = 4;
+    }
+    else {
+      depth = 0;
+    }
+  }
+  var to_be_styled = elt;
+  for (var i = 0; i < depth; i++) {
+    to_be_styled = to_be_styled.parentElement;
+  }
+  to_be_styled.style.background = color;
 }
 
-function color_off(elt) {
-  elt.parentElement.parentElement.parentElement.parentElement.style.background = off_color;
+function color_on(elt, depth) {
+  encolor(elt, on_color, depth);
+}
+
+function color_off(elt, depth) {
+  encolor(elt, off_color, depth);
 }
 
 function toggle(elt) {
@@ -50,16 +71,25 @@ function toggle_off(elt) {
 }
 
 
-function add_checkbox_module(elt) {
+function add_checkbox_assignment(elt) {
   var checkbox = document.createElement("input");
   checkbox.type = "checkbox";
-  elt.parentElement.parentElement.appendChild(checkbox);
+  elt.children[0].children[0].children[1].insertBefore(checkbox, temp1.children[0].children[0].children[1].children[0].nextElementSibling)
+  console.log(checkbox);
+  console.log(elt);
+}
+
+
+function add_checkbox(elt) {
+  var checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  elt.parentElement.insertBefore(checkbox, elt.nextElementSibling);
   checkbox.addEventListener('change', function() {
     if (this.checked) {
-      toggle_on(this.parentElement.children[0].children[0]);
+      toggle_on(this.previousElementSibling);
     }
     else {
-      toggle_off(this.parentElement.children[0].children[0]);
+      toggle_off(this.previousElementSibling);
     }    
   });
 
@@ -77,7 +107,7 @@ function add_checkbox_module(elt) {
 function main() {
   for (var i = 0; i < actual_links.length; i++) {
     var actual_link = actual_links[i];  
-    add_checkbox_module(actual_link);
+    add_checkbox(actual_link);
   }
 }
 

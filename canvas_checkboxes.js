@@ -3,8 +3,9 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://*.instructure.com/*/*/modules
 // @match       https://*.instructure.com/*/*/assignments
+// @run-at      document-idle
 // @grant       none
-// @version     1.2.1
+// @version     1.2.2
 // @author      -
 // @description Add checkboxes to some items in canvas to keep track of what's been read/done.
 // ==/UserScript==

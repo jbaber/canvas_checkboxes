@@ -4,12 +4,11 @@
 // @match       https://*.instructure.com/*/*/modules
 // @match       https://*.instructure.com/*/*/assignments
 // @grant       none
-// @version     1.2.0
+// @version     1.2.1
 // @author      -
 // @description Add checkboxes to some items in canvas to keep track of what's been read/done.
 // ==/UserScript==
 
-var actual_links = document.getElementsByClassName("ig-title");
 var off_color = "#ffc4c4";
 var on_color = "rgb(227, 251, 184)";
 
@@ -105,6 +104,7 @@ function add_checkbox(elt) {
 
 
 function main() {
+  var actual_links = document.getElementsByClassName("ig-title");
   for (var i = 0; i < actual_links.length; i++) {
     var actual_link = actual_links[i];  
     add_checkbox(actual_link);

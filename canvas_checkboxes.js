@@ -1,115 +1,98 @@
 // ==UserScript==
 // @name        canvas_checkboxes
 // @namespace   Violentmonkey Scripts
-// @match       https://*.instructure.com/*/*/modules
-// @match       https://*.instructure.com/*/*/assignments
-// @run-at      document-idle
+// @match       http*://*.instructure.com/*/*/modules
+// @match       http*://*.instructure.com/*/*/assignments
+// @match       http*://*.canvas.*.edu/*/*/modules
+// @match       http*://*.canvas.*.edu/*/*/assignments
+// @run-at      document-end
 // @grant       none
-// @version     1.2.2
+// @version     1.3
 // @author      -
-// @description Add checkboxes to some items in canvas to keep track of what's been read/done.
+// @description Add checkboxes to some items in canvas to keep track of what you have read/completed.
 // ==/UserScript==
 
-var off_color = "#ffc4c4";
-var on_color = "rgb(227, 251, 184)";
+const ON_COLOR = "#c4ffc4";
+const OFF_COLOR = "#ffc4c4";
 
-/* For assignments, depth is 3, for modules, depth is 4 */
-function encolor(elt, color, depth) {
-  if (depth === undefined) {
-    var pieces = window.location.pathname.split("/");
-    var final_slug = pieces[pieces.length - 1];
-    if (final_slug == "assignments") {
-      depth = 3;
-    }
-    else if (final_slug == "modules") {
-      depth = 4;
-    }
-    else {
-      depth = 0;
-    }
-  }
-  var to_be_styled = elt;
-  for (var i = 0; i < depth; i++) {
-    to_be_styled = to_be_styled.parentElement;
-  }
-  to_be_styled.style.background = color;
+function toggleOn(element) {
+  localStorage["ccb_" + element.querySelector(".ig-title").href] = "checked";
+  element.style.background = ON_COLOR;
 }
 
-function color_on(elt, depth) {
-  encolor(elt, on_color, depth);
+function toggleOff(element) {
+  localStorage.removeItem("ccb_" + element.querySelector(".ig-title").href);
+  element.style.background = OFF_COLOR;
 }
 
-function color_off(elt, depth) {
-  encolor(elt, off_color, depth);
+function isChecked(element) {
+  return Boolean(element?.querySelector("input")?.checked);
 }
 
-function toggle(elt) {
-  if (toggled_on(elt)) {
-    toggle_off(elt);
-  }
-  else {
-    toggle_on(elt);
-  }
+function initIsChecked(element) {
+  return typeof localStorage[
+    "ccb_" + element.querySelector(".ig-title").href
+  ] === "undefined"
+    ? false
+    : true;
 }
 
-
-function toggle_on(elt) {
-  localStorage["ccb_" + elt.href] = "clicked";
-  color_on(elt);
+function colorChangerEvent() {
+  isChecked(this) ? toggleOn(this) : toggleOff(this);
 }
 
-function toggled_on(elt) {
-  if (localStorage["ccb_" + elt.href] === undefined) {
-    return false;
-  }
-  return true;
+function initCheckboxes(baseElement = document) {
+  [...baseElement.querySelectorAll(".ig-list")]
+    .filter((element) => element.querySelector(".ig-list") == null)
+    .forEach((ul) => {
+      ul.querySelectorAll(".ig-row").forEach((div) => {
+        let title = div.querySelector(".ig-title");
+        if (!title || !(div.querySelector("input") == null)) {
+          return;
+        }
+        let checked =
+          localStorage["ccb_" + div.querySelector(".ig-title").href] ===
+          "checked"
+            ? "checked"
+            : "";
+        initIsChecked(div)
+          ? (div.style.background = ON_COLOR)
+          : (div.style.background = OFF_COLOR);
+        title.insertAdjacentHTML(
+          "afterend",
+          `<input type="checkbox" style="height:20px !important;width:20px !important;" ${checked}>`
+        );
+        div.addEventListener("click", colorChangerEvent, false);
+      });
+    });
 }
 
-function toggle_off(elt) {
-  delete localStorage["ccb_" + elt.href];
-  color_off(elt);
-}
-
-
-function add_checkbox_assignment(elt) {
-  var checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  elt.children[0].children[0].children[1].insertBefore(checkbox, temp1.children[0].children[0].children[1].children[0].nextElementSibling)
-  console.log(checkbox);
-  console.log(elt);
-}
-
-
-function add_checkbox(elt) {
-  var checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  elt.parentElement.insertBefore(checkbox, elt.nextElementSibling);
-  checkbox.addEventListener('change', function() {
-    if (this.checked) {
-      toggle_on(this.previousElementSibling);
-    }
-    else {
-      toggle_off(this.previousElementSibling);
-    }    
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    mutation.addedNodes.forEach((node) => {
+      if (node instanceof HTMLElement) {
+        initCheckboxes(node);
+      }
+    });
   });
+});
 
-  if (toggled_on(elt)) {
-    color_on(elt);
-    checkbox.checked = true;
-  }
-  else {
-    color_off(elt);
-    checkbox.checked = false;
-  }
+observer.observe(document.querySelector("#content"), {
+  childList: true,
+  subtree: true,
+});
+
+if (document.readyState === "complete") {
+  initCheckboxes();
+} else if (document.readyState === "interactive") {
+  // DOM ready! Images, frames, and other subresources are still downloading.
+  initCheckboxes();
+} else {
+  // Loading still in progress.
+  // To wait for it to complete, add "DOMContentLoaded" or "load" listeners.
+
+  window.addEventListener("DOMContentLoaded", () => {
+    // DOM ready! Images, frames, and other subresources are still downloading.
+    initCheckboxes();
+  });
 }
-
-
-function main() {
-  var actual_links = document.getElementsByClassName("ig-title");
-  for (var i = 0; i < actual_links.length; i++) {
-    var actual_link = actual_links[i];  
-    add_checkbox(actual_link);
-  }
-}
-
-main();
